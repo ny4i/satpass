@@ -166,6 +166,41 @@ def format_freq_info(sat_name: str, freq_data: dict) -> str:
     return "\n".join(lines)
 
 
+def fold_ics_line(line: str, max_octets: int = 75) -> str:
+    """Fold ICS line to max_octets bytes per RFC 5545."""
+    line_bytes = line.encode('utf-8')
+    if len(line_bytes) <= max_octets:
+        return line
+
+    result = []
+    # First line: up to max_octets bytes
+    pos = 0
+    while pos < max_octets and pos < len(line):
+        # Don't split in middle of multi-byte character
+        char_bytes = len(line[pos].encode('utf-8'))
+        if len(line[:pos + 1].encode('utf-8')) > max_octets:
+            break
+        pos += 1
+    result.append(line[:pos])
+    line = line[pos:]
+
+    # Continuation lines: space + up to (max_octets - 1) bytes
+    while line:
+        pos = 0
+        # Account for the leading space (1 byte)
+        while pos < len(line):
+            chunk = " " + line[:pos + 1]
+            if len(chunk.encode('utf-8')) > max_octets:
+                break
+            pos += 1
+        if pos == 0:
+            pos = 1  # At least one character
+        result.append(" " + line[:pos])
+        line = line[pos:]
+
+    return "\r\n".join(result)
+
+
 def generate_ics(passes: list[dict], freq_data: dict, grid: str, tz_offset: timedelta, notify_minutes: int = None) -> str:
     """Generate ICS calendar content for all passes."""
     lines = [
@@ -230,7 +265,8 @@ def generate_ics(passes: list[dict], freq_data: dict, grid: str, tz_offset: time
         lines.append("END:VEVENT")
 
     lines.append("END:VCALENDAR")
-    return "\r\n".join(lines)
+    # Fold long lines per RFC 5545
+    return "\r\n".join(fold_ics_line(line) for line in lines)
 
 
 def main():
