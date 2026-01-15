@@ -322,7 +322,7 @@ The satellite name in `satellites.txt` doesn't match Celestrak's naming. Check t
 
 ## License
 
-MIT License - feel free to use and modify.
+GNU General Public License v3.0 - see [LICENSE](LICENSE) for details.
 
 ## Credits
 
