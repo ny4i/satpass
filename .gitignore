@@ -1,0 +1,15 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Generated files
+*.ics
+*.tle
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*~

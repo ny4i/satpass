@@ -1,0 +1,58 @@
+{
+  "ISS-FM": {
+    "name": "ISS (ZARYA)",
+    "mode": "FM",
+    "uplink": "145.99",
+    "downlink": "437.80",
+    "tone": "67.0 Hz",
+    "notes": "Columbus module repeater"
+  },
+  "AO-73": {
+    "name": "FUNcube-1",
+    "mode": "SSB/CW",
+    "uplink": "435.150-435.130",
+    "downlink": "145.950-145.970",
+    "tone": null,
+    "notes": "Inverting transponder. LSB up, USB down. Active nights/weekends."
+  },
+  "AO-7[B]": {
+    "name": "OSCAR 7 Mode B",
+    "mode": "SSB/CW",
+    "uplink": "432.125-432.175",
+    "downlink": "145.925-145.975",
+    "tone": null,
+    "notes": "Inverting transponder. LSB up, USB down. Solar powered, mode alternates."
+  },
+  "RS-44": {
+    "name": "DOSAAF-85",
+    "mode": "SSB/CW",
+    "uplink": "145.935-145.995",
+    "downlink": "435.610-435.670",
+    "tone": null,
+    "notes": "Inverting transponder. LSB up, USB down. NO FM. Beacon 435.605 CW."
+  },
+  "SO-124": {
+    "name": "HADES-R",
+    "mode": "FM",
+    "uplink": "145.925",
+    "downlink": "436.885",
+    "tone": null,
+    "notes": "No CTCSS required. Open squelch."
+  },
+  "SO-125": {
+    "name": "HADES-ICM",
+    "mode": "FM",
+    "uplink": "145.875",
+    "downlink": "436.666",
+    "tone": null,
+    "notes": "No CTCSS required. SDR-based, up to 0.25W output."
+  },
+  "SO-50": {
+    "name": "SaudiSat-1C",
+    "mode": "FM",
+    "uplink": "145.850",
+    "downlink": "436.795",
+    "tone": "67.0 Hz",
+    "notes": "Arm with 74.4 Hz for 2 sec, then use 67.0 Hz during QSO."
+  }
+}
