@@ -31,14 +31,6 @@
     "tone": null,
     "notes": "Inverting transponder. LSB up, USB down. NO FM. Beacon 435.605 CW."
   },
-  "SO-124": {
-    "name": "HADES-R",
-    "mode": "FM",
-    "uplink": "145.925",
-    "downlink": "436.885",
-    "tone": null,
-    "notes": "No CTCSS required. Open squelch."
-  },
   "SO-125": {
     "name": "HADES-ICM",
     "mode": "FM",
@@ -54,5 +46,29 @@
     "downlink": "436.795",
     "tone": "67.0 Hz",
     "notes": "Arm with 74.4 Hz for 2 sec, then use 67.0 Hz during QSO."
+  },
+  "FO-29": {
+    "name": "FO-29",
+    "mode": "SSB/CW",
+    "uplink": "145.900-146.000",
+    "downlink": "435.900-435.800",
+    "tone": null,
+    "notes": ""
+  },
+  "AO-123": {
+    "name": "AO-123",
+    "mode": "FM",
+    "uplink": "145.875",
+    "downlink": "435.400",
+    "tone": null,
+    "notes": ""
+  },
+  "JO-97": {
+    "name": "JY1Sat JO-97",
+    "mode": "SSB/CW",
+    "uplink": "145.965",
+    "downlink": "435.110",
+    "tone": null,
+    "notes": ""
   }
 }

@@ -280,14 +280,18 @@ def main():
     parser.add_argument('--utc', action='store_true', help='Display times in UTC (default: local time)')
     parser.add_argument('--ics', metavar='FILE', help='Export passes to ICS calendar file')
     parser.add_argument('--ics-notify', type=int, metavar='MIN', help='Add calendar reminder N minutes before each pass')
+    parser.add_argument('--json', action='store_true', help='Output passes as JSON to stdout (diagnostics go to stderr)')
     args = parser.parse_args()
 
     script_dir = Path(__file__).parent
 
+    # In JSON mode, keep stdout clean for the JSON array; send diagnostics to stderr
+    info = sys.stderr if args.json else sys.stdout
+
     # Parse location
     try:
         lat, lon = grid_to_latlon(args.grid)
-        print(f"Location: {args.grid} ({lat:.4f}°N, {lon:.4f}°W)")
+        print(f"Location: {args.grid} ({lat:.4f}°N, {lon:.4f}°W)", file=info)
     except ValueError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
@@ -311,9 +315,9 @@ def main():
     end_utc = start_utc + timedelta(hours=args.hours)
     end_local = start_local + timedelta(hours=args.hours)
 
-    print(f"Window: {start_local.strftime('%Y-%m-%d %H:%M')} to {end_local.strftime('%Y-%m-%d %H:%M')} {tz_name}")
-    print(f"Min elevation: {args.min_elev}°")
-    print()
+    print(f"Window: {start_local.strftime('%Y-%m-%d %H:%M')} to {end_local.strftime('%Y-%m-%d %H:%M')} {tz_name}", file=info)
+    print(f"Min elevation: {args.min_elev}°", file=info)
+    print(file=info)
 
     # Setup observer
     observer = ephem.Observer()
@@ -333,20 +337,20 @@ def main():
     # Load frequency data
     freq_data, freq_file_exists = load_frequencies(script_dir)
     if not freq_file_exists:
-        print("WARNING: frequencies.json not found - ICS notes will lack frequency data")
-        print("         Run: ./venv/bin/python3 update_frequencies.py")
-        print()
+        print("WARNING: frequencies.json not found - ICS notes will lack frequency data", file=info)
+        print("         Run: ./venv/bin/python3 update_frequencies.py", file=info)
+        print(file=info)
     else:
         missing_freq = validate_frequencies(sat_names, freq_data)
         if missing_freq:
-            print(f"WARNING: {len(missing_freq)} satellite(s) missing frequency data:")
+            print(f"WARNING: {len(missing_freq)} satellite(s) missing frequency data:", file=info)
             for sat in missing_freq:
-                print(f"         - {sat}")
-            print("         Run: ./venv/bin/python3 update_frequencies.py")
-            print()
+                print(f"         - {sat}", file=info)
+            print("         Run: ./venv/bin/python3 update_frequencies.py", file=info)
+            print(file=info)
 
     # Fetch TLE data
-    print("Fetching TLE data...")
+    print("Fetching TLE data...", file=info)
     try:
         tle_text = fetch_tle_data()
         tle_dict = parse_tle_data(tle_text)
@@ -359,7 +363,7 @@ def main():
     for sat_name in sat_names:
         tle = find_satellite(sat_name, tle_dict)
         if not tle:
-            print(f"  NOT FOUND: {sat_name}")
+            print(f"  NOT FOUND: {sat_name}", file=info)
             continue
 
         try:
@@ -368,39 +372,54 @@ def main():
             for p in passes:
                 p['satellite'] = sat_name
             all_passes.extend(passes)
-            print(f"  {sat_name}: {len(passes)} passes")
+            print(f"  {sat_name}: {len(passes)} passes", file=info)
         except Exception as e:
-            print(f"  ERROR {sat_name}: {e}")
+            print(f"  ERROR {sat_name}: {e}", file=info)
 
     # Sort by rise time
     all_passes.sort(key=lambda p: p['rise_time'])
 
-    # Print results
-    print()
-    print("=" * 70)
-    tz_label = "UTC" if args.utc else "LOCAL"
-    print(f"{'TIME (' + tz_label + ')':<18} {'SAT':<10} {'AOS':<5} {'MAX EL':>6} {'LOS':<5} {'DUR':>5}")
-    print("=" * 70)
+    # Output results
+    if args.json:
+        records = []
+        for p in all_passes:
+            duration = (p['set_time'] - p['rise_time']).seconds // 60
+            display_time = p['rise_time'] + tz_offset
+            records.append({
+                "datetime": display_time.strftime('%Y-%m-%d %H:%M'),
+                "sat": p['satellite'],
+                "aos": az_to_dir(p['rise_az']),
+                "max_el": round(p['max_elev'], 1),
+                "los": az_to_dir(p['set_az']),
+                "dur_min": duration,
+            })
+        print(json.dumps(records, indent=2))
+    else:
+        print()
+        print("=" * 70)
+        tz_label = "UTC" if args.utc else "LOCAL"
+        print(f"{'TIME (' + tz_label + ')':<18} {'SAT':<10} {'AOS':<5} {'MAX EL':>6} {'LOS':<5} {'DUR':>5}")
+        print("=" * 70)
 
-    for p in all_passes:
-        duration = (p['set_time'] - p['rise_time']).seconds // 60
-        display_time = p['rise_time'] + tz_offset
-        print(f"{display_time.strftime('%Y-%m-%d %H:%M'):<18} "
-              f"{p['satellite']:<10} "
-              f"{az_to_dir(p['rise_az']):<5} "
-              f"{p['max_elev']:>5.1f}° "
-              f"{az_to_dir(p['set_az']):<5} "
-              f"{duration:>4}m")
+        for p in all_passes:
+            duration = (p['set_time'] - p['rise_time']).seconds // 60
+            display_time = p['rise_time'] + tz_offset
+            print(f"{display_time.strftime('%Y-%m-%d %H:%M'):<18} "
+                  f"{p['satellite']:<10} "
+                  f"{az_to_dir(p['rise_az']):<5} "
+                  f"{p['max_elev']:>5.1f}° "
+                  f"{az_to_dir(p['set_az']):<5} "
+                  f"{duration:>4}m")
 
-    print("=" * 70)
-    print(f"Total: {len(all_passes)} passes")
+        print("=" * 70)
+        print(f"Total: {len(all_passes)} passes")
 
     # Export to ICS if requested
     if args.ics:
         ics_content = generate_ics(all_passes, freq_data, args.grid, tz_offset, args.ics_notify)
         with open(args.ics, 'w') as f:
             f.write(ics_content)
-        print(f"\nExported to: {args.ics}")
+        print(f"\nExported to: {args.ics}", file=info)
 
 
 if __name__ == '__main__':
