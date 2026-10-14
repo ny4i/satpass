@@ -50,7 +50,11 @@ def grid_to_latlon(grid: str) -> tuple[float, float]:
 def fetch_tle_data() -> str:
     """Fetch amateur satellite TLE data from Celestrak."""
     url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle"
-    with urllib.request.urlopen(url, timeout=30) as response:
+    # Celestrak's bot protection silently stalls requests sent with the
+    # default urllib User-Agent until the socket times out, instead of
+    # responding immediately (e.g. with a 503 during an outage).
+    req = urllib.request.Request(url, headers={"User-Agent": "satpass/1.0"})
+    with urllib.request.urlopen(req, timeout=30) as response:
         return response.read().decode('utf-8')
 
 
