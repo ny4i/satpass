@@ -184,6 +184,8 @@ Replace `EL87pb` with your Maidenhead grid square. You can find yours at: https:
 | `--utc` | Display times in UTC | local time |
 | `--ics FILE` | Export to ICS calendar file | - |
 | `--ics-notify MIN` | Add reminder N minutes before pass | - |
+| `--all` | Show all tracked satellites, not just active ones | - |
+| `--active-hours N` | Lookback window for activity status | 48 |
 
 ### Examples
 
@@ -202,7 +204,21 @@ Replace `EL87pb` with your Maidenhead grid square. You can find yours at: https:
 
 # Start from a specific date/time
 ./passes.sh --grid EL87pb --min-elev 10 --start "2024-03-15 08:00"
+
+# Show all tracked satellites, even ones with no recent activity
+./passes.sh --grid EL87pb --min-elev 10 --all
 ```
+
+### Activity Filtering
+
+By default, only satellites with recent reported activity on the [AMSAT Live
+OSCAR Satellite Status page](https://www.amsat.org/status/) are included —
+the same blue "Sat/Mode Active" cells you'd otherwise check manually before
+an event. This queries AMSAT's public status API directly (no scraping) and
+looks back 48 hours by default (`--active-hours` to change). Pass `--all` to
+predict passes for every satellite in `satellites.txt` regardless of recent
+activity. If the status API is unreachable, the script warns and falls back
+to showing everything.
 
 ### Understanding the Output
 

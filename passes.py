@@ -15,6 +15,8 @@ from pathlib import Path
 
 import ephem
 
+import amsat_status
+
 # AMSAT name -> Celestrak name mapping
 NAME_MAP = {
     "SO-124": "HADES-R",
@@ -277,6 +279,11 @@ def main():
     parser.add_argument('--start', help='Start time (YYYY-MM-DD HH:MM), default: now')
     parser.add_argument('--hours', type=float, default=24, help='Hours to predict (default: 24)')
     parser.add_argument('--sats', default='satellites.txt', help='Satellite list file')
+    parser.add_argument('--all', action='store_true',
+                        help='Show all tracked satellites, not just ones with recent '
+                             'reported AMSAT activity (default: active only)')
+    parser.add_argument('--active-hours', type=int, default=48,
+                        help='Lookback window in hours for AMSAT activity status (default: 48)')
     parser.add_argument('--utc', action='store_true', help='Display times in UTC (default: local time)')
     parser.add_argument('--ics', metavar='FILE', help='Export passes to ICS calendar file')
     parser.add_argument('--ics-notify', type=int, metavar='MIN', help='Add calendar reminder N minutes before each pass')
@@ -333,6 +340,30 @@ def main():
     except FileNotFoundError:
         print(f"ERROR: {sats_file} not found", file=sys.stderr)
         sys.exit(1)
+
+    # Filter to satellites with recent reported AMSAT activity, unless --all
+    if not args.all:
+        try:
+            summary_rows = amsat_status.fetch_summary(hours=args.active_hours)
+            active_bases = amsat_status.active_base_designations(summary_rows)
+            active_sats = [s for s in sat_names if amsat_status.is_active(s, active_bases)]
+            inactive_sats = [s for s in sat_names if s not in active_sats]
+            if inactive_sats:
+                print(f"Skipping {len(inactive_sats)} satellite(s) with no reported "
+                      f"activity in the last {args.active_hours}h (use --all to include):",
+                      file=info)
+                for sat in inactive_sats:
+                    print(f"         - {sat}", file=info)
+                print(file=info)
+            sat_names = active_sats
+            if not sat_names:
+                print("WARNING: no tracked satellites show recent activity; "
+                      "use --all to predict passes anyway.", file=info)
+                print(file=info)
+        except Exception as e:
+            print(f"WARNING: could not fetch AMSAT status ({e}); showing all satellites.",
+                  file=info)
+            print(file=info)
 
     # Load frequency data
     freq_data, freq_file_exists = load_frequencies(script_dir)
