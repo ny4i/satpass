@@ -139,6 +139,17 @@ def load_frequencies(script_dir: Path) -> tuple[dict, bool]:
     return {}, False
 
 
+def mode_matches(sat_name: str, freq_data: dict, mode_filter: str) -> bool:
+    """Check whether a satellite's mode (from frequencies.json) matches a
+    filter. SSB and CW are treated as interchangeable, since linear
+    transponders carry both (e.g. mode "SSB/CW" matches a filter of "CW").
+    """
+    sat_mode = freq_data.get(sat_name, {}).get("mode") or ""
+    sat_tokens = {t.strip().upper() for t in sat_mode.split("/") if t.strip()}
+    filter_tokens = {t.strip().upper() for t in mode_filter.split("/") if t.strip()}
+    return bool(sat_tokens & filter_tokens)
+
+
 def validate_frequencies(sat_names: list[str], freq_data: dict) -> list[str]:
     """Check which satellites are missing frequency data. Returns list of missing satellites."""
     missing = []
@@ -288,6 +299,9 @@ def main():
                              'reported AMSAT activity (default: active only)')
     parser.add_argument('--active-hours', type=int, default=48,
                         help='Lookback window in hours for AMSAT activity status (default: 48)')
+    parser.add_argument('--mode', help='Only show satellites with this mode from '
+                        'frequencies.json (e.g. FM, SSB, CW, SSB/CW — SSB and CW are '
+                        'treated as interchangeable). Default: all modes')
     parser.add_argument('--utc', action='store_true', help='Display times in UTC (default: local time)')
     parser.add_argument('--ics', metavar='FILE', help='Export passes to ICS calendar file')
     parser.add_argument('--ics-notify', type=int, metavar='MIN', help='Add calendar reminder N minutes before each pass')
@@ -345,6 +359,21 @@ def main():
         print(f"ERROR: {sats_file} not found", file=sys.stderr)
         sys.exit(1)
 
+    # Load frequency data (needed for mode filtering as well as ICS notes)
+    freq_data, freq_file_exists = load_frequencies(script_dir)
+
+    # Filter to a specific mode, unless --mode was omitted
+    if args.mode:
+        mode_sats = [s for s in sat_names if mode_matches(s, freq_data, args.mode)]
+        excluded_sats = [s for s in sat_names if s not in mode_sats]
+        if excluded_sats:
+            print(f"Skipping {len(excluded_sats)} satellite(s) not matching mode "
+                  f"'{args.mode}':", file=info)
+            for sat in excluded_sats:
+                print(f"         - {sat}", file=info)
+            print(file=info)
+        sat_names = mode_sats
+
     # Filter to satellites with recent reported AMSAT activity, unless --all
     if not args.all:
         try:
@@ -369,8 +398,6 @@ def main():
                   file=info)
             print(file=info)
 
-    # Load frequency data
-    freq_data, freq_file_exists = load_frequencies(script_dir)
     if not freq_file_exists:
         print("WARNING: frequencies.json not found - ICS notes will lack frequency data", file=info)
         print("         Run: ./venv/bin/python3 update_frequencies.py", file=info)

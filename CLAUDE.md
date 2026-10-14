@@ -19,6 +19,9 @@ Amateur radio satellite pass predictor. Predicts visible passes over a location,
 
 # Show all tracked satellites regardless of recent reported activity
 ./passes.sh --grid EL87pb --min-elev 10 --all
+
+# Only show FM satellites
+./passes.sh --grid EL87pb --min-elev 10 --mode FM
 ```
 
 Options:
@@ -33,6 +36,7 @@ Options:
 - `--ics-notify MIN` - Add calendar reminder N minutes before each pass
 - `--all` - Show all tracked satellites, not just ones with recent reported AMSAT activity (default: active only)
 - `--active-hours N` - Lookback window in hours for AMSAT activity status (default: 48)
+- `--mode MODE` - Only show satellites with this mode from `frequencies.json` (e.g. `FM`, `SSB`, `CW`, `SSB/CW` — SSB and CW are treated as interchangeable since linear transponders carry both). Default: all modes
 
 ## Activity Filtering
 

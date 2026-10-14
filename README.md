@@ -186,6 +186,7 @@ Replace `EL87pb` with your Maidenhead grid square. You can find yours at: https:
 | `--ics-notify MIN` | Add reminder N minutes before pass | - |
 | `--all` | Show all tracked satellites, not just active ones | - |
 | `--active-hours N` | Lookback window for activity status | 48 |
+| `--mode MODE` | Only show satellites with this mode (e.g. `FM`, `SSB`, `CW`, `SSB/CW`) | all modes |
 
 ### Examples
 
@@ -207,6 +208,12 @@ Replace `EL87pb` with your Maidenhead grid square. You can find yours at: https:
 
 # Show all tracked satellites, even ones with no recent activity
 ./passes.sh --grid EL87pb --min-elev 10 --all
+
+# Only show FM satellites
+./passes.sh --grid EL87pb --min-elev 10 --mode FM
+
+# Only show linear (SSB/CW) satellites
+./passes.sh --grid EL87pb --min-elev 10 --mode SSB/CW
 ```
 
 ### Activity Filtering
@@ -219,6 +226,10 @@ looks back 48 hours by default (`--active-hours` to change). Pass `--all` to
 predict passes for every satellite in `satellites.txt` regardless of recent
 activity. If the status API is unreachable, the script warns and falls back
 to showing everything.
+
+Use `--mode` to further narrow by mode (e.g. only FM, or only linear SSB/CW
+satellites), based on the `mode` field in `frequencies.json`. SSB and CW are
+treated as interchangeable since a linear transponder normally carries both.
 
 ### Understanding the Output
 
