@@ -50,8 +50,8 @@
   "FO-29": {
     "name": "FO-29",
     "mode": "SSB/CW",
-    "uplink": "145.900-146.000",
-    "downlink": "435.900-435.800",
+    "uplink": "145.950",
+    "downlink": "435.850",
     "tone": null,
     "notes": ""
   },
