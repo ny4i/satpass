@@ -1,19 +1,26 @@
 # SatPass - Amateur Radio Satellite Pass Predictor
 
-Predict visible satellite passes over your location, with frequency information and calendar export.
+Predict visible satellite passes over your location — with frequency info, mode filtering, live activity awareness, and calendar export.
+
+## Why SatPass?
+
+Predicting *when* a satellite passes overhead is solved math: give an orbital element set (TLE) and a ground location to something like PyEphem and it tells you the rise/max/set times. The harder, more tedious problem is knowing *whether anyone can actually hear it right now*. Many amateur satellites are solar-powered, intermittently active, or just silent for long stretches, and the usual way to check is to eyeball AMSAT's [Live OSCAR Satellite Status page](https://www.amsat.org/status/) — a grid of recent reports — and manually cross-reference it against your own satellite list before planning for an event.
+
+SatPass automates both halves. It predicts passes over your grid square from current orbital data, and by default only reports satellites that AMSAT's status page shows as recently active, by querying [AMSAT's public status API](https://www.amsat.org/status/api/docs.php) directly (no page-scraping). Point it at an upcoming event — Field Day, a Jamboree-on-the-Air session, a satellite net — and get back exactly what's worth planning around, with uplink/downlink/mode/tone info ready to drop into a calendar.
 
 ## Features
 
-- Predict passes for amateur radio satellites (ISS, SO-50, AO-73, etc.)
-- Filter by minimum elevation angle
+- Predict passes for amateur radio satellites (ISS, SO-50, AO-73, etc.) over any Maidenhead grid square
+- **Only shows satellites with recently reported activity by default**, pulled live from AMSAT's status API — no manual status-page checking
+- Filter by mode (FM, or linear SSB/CW) and by minimum elevation angle
 - Display times in local timezone or UTC
-- Export to ICS calendar files with frequency info in notes
+- Export to ICS calendar files with frequency info in the event notes
 - Optional calendar reminders before each pass
 
 ## Quick Start
 
 ```bash
-# Predict passes for the next 24 hours
+# Predict passes for the next 24 hours (active satellites only, by default)
 ./passes.sh --grid EL87pb --min-elev 10
 
 # Export to calendar with 15-minute reminders
@@ -41,7 +48,7 @@ You need Python 3.9 or newer installed on your system.
 
 2. **Download or clone this repository:**
    ```bash
-   git clone https://github.com/yourusername/satpass.git
+   git clone https://github.com/ny4i/satpass.git
    cd satpass
    ```
    Or download and extract the ZIP file, then open Terminal and navigate to the folder:
@@ -81,7 +88,7 @@ You need Python 3.9 or newer installed on your system.
 
 2. **Download or clone this repository:**
    ```bash
-   git clone https://github.com/yourusername/satpass.git
+   git clone https://github.com/ny4i/satpass.git
    cd satpass
    ```
 
@@ -231,6 +238,12 @@ Use `--mode` to further narrow by mode (e.g. only FM, or only linear SSB/CW
 satellites), based on the `mode` field in `frequencies.json`. SSB and CW are
 treated as interchangeable since a linear transponder normally carries both.
 
+Activity filtering only chooses *among* satellites already in `satellites.txt`
+— it never adds or removes entries from that file on its own. A satellite
+that's newly active on AMSAT's status page still needs to be added to
+`satellites.txt` (and given a `frequencies.json` entry) by hand before it
+will show up here at all. See [Customizing Satellites](#customizing-satellites).
+
 ### Understanding the Output
 
 ```
@@ -303,6 +316,26 @@ Each calendar event includes:
 
 ---
 
+## Maintenance
+
+Nothing here needs to run on a schedule. Orbital data (TLEs) and AMSAT
+activity status are both fetched fresh on every run of `passes.sh` — there's
+no cache to refresh or cron job to set up.
+
+The only upkeep is occasional and manual, since new satellites are rare:
+
+- **Adding a satellite**: put its AMSAT designation in `satellites.txt`, then
+  run `./update_frequencies.sh` to create a blank template entry in
+  `frequencies.json`, and fill in the uplink/downlink/mode/tone yourself —
+  AMSAT's status page and [amsat-uk.org](https://amsat-uk.org/satellites/frequencies-of-active-satellites/)
+  are good sources. The activity filter can only ever surface satellites that
+  are already in `satellites.txt`; it doesn't discover or add new ones.
+- **Removing a satellite**: delete it from `satellites.txt`. Running
+  `./update_frequencies.sh` afterward will flag the now-orphaned entry in
+  `frequencies.json` so you know to clean it up.
+
+---
+
 ## Troubleshooting
 
 ### "python3: command not found"
@@ -335,15 +368,43 @@ Run the frequency update script:
 
 The satellite name in `satellites.txt` doesn't match Celestrak's naming. Check the name mapping in `passes.py` or use the exact Celestrak name.
 
+### "HTTP Error 503/500" fetching TLE data, or a warning that AMSAT status couldn't be fetched
+
+These come from Celestrak or AMSAT's servers, not from SatPass itself — both
+are free public services that occasionally have brief outages. Wait a bit and
+retry. If AMSAT's status API is down, the script automatically falls back to
+showing all tracked satellites with a warning, so you can still get pass
+predictions in the meantime (use `--all` to do this proactively).
+
+### Still stuck?
+
+See [Reporting Issues](#reporting-issues) below.
+
 ---
 
 ## How It Works
 
-1. Reads satellite list from `satellites.txt`
-2. Fetches current TLE (orbital) data from Celestrak
-3. Uses PyEphem to calculate when satellites are visible from your location
-4. Filters passes by minimum elevation
-5. Displays results and optionally exports to ICS
+1. Reads the satellite list from `satellites.txt`
+2. Queries [AMSAT's status API](https://www.amsat.org/status/api/docs.php) for
+   recently reported activity, and filters the list down to active
+   satellites (unless `--all` is given)
+3. Fetches current TLE (orbital) data from Celestrak
+4. Uses PyEphem to calculate when the remaining satellites are visible from
+   your location
+5. Filters passes by minimum elevation
+6. Displays results and optionally exports to ICS
+
+---
+
+## Reporting Issues
+
+Found a bug, a wrong frequency, a satellite that won't predict correctly, or
+have a feature request? Please open an issue on GitHub:
+
+**https://github.com/ny4i/satpass/issues**
+
+When reporting a problem, including the exact command you ran and the full
+output (or error message) will help a lot.
 
 ---
 
