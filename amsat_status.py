@@ -24,7 +24,10 @@ def fetch_summary(hours=48, timeout=15):
     latest_reported_time.
     """
     url = f"{STATUS_API}/summary.php?hours={hours}"
-    with urllib.request.urlopen(url, timeout=timeout) as response:
+    # AMSAT's bot protection returns 403 for the default urllib User-Agent
+    # (see the matching fix for Celestrak's TLE fetch in passes.py).
+    req = urllib.request.Request(url, headers={"User-Agent": "satpass/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as response:
         payload = json.load(response)
     return payload.get("data", [])
 
